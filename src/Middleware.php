@@ -47,13 +47,20 @@ class Middleware implements MiddlewareInterface
     /**
      * Initialize middleware stack
      * this recommended to intended for middleware empty
+     * @access protected
      */
-    protected function initializeStackMiddleware()
+    protected function currentStackMiddleware() : MiddlewareStorage
     {
         // add current object as first middleware middleware
         if (count($this->middleware) === 0) {
-            $this->middleware[] = new MiddlewareStorage($this, $this);
+            $middleware = method_exists($this, '__invoke')
+                ? $this
+                : new FakeMiddlewareInvokable();
+            $this->middleware[] = new MiddlewareStorage($middleware, $middleware);
         }
+
+        $middleware = end($this->middleware);
+        return $middleware;
     }
 
     /**
@@ -67,11 +74,10 @@ class Middleware implements MiddlewareInterface
             );
         }
 
-        $this->initializeStackMiddleware();
-        $middleware = end($this->middleware);
+        $middleware = $this->currentStackMiddleware()->getCallableMiddleware();
         $this->middleware[] = new MiddlewareStorage(
             $callable,
-            $middleware->getCallableMiddleware()
+            $middleware
         );
 
         return $this;
@@ -82,10 +88,8 @@ class Middleware implements MiddlewareInterface
      */
     public function callMiddlewareStack(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $this->initializeStackMiddleware();
         $this->middlewareLocked = true;
-        $middleware             = end($this->middleware);
-        $response               = $middleware($request, $response);
+        $response               = $this->currentStackMiddleware()->__invoke($request, $response);
         $this->middlewareLocked = false;
         return $response;
     }
@@ -104,18 +108,5 @@ class Middleware implements MiddlewareInterface
     public function getMiddleware() : array
     {
         return $this->middleware;
-    }
-
-    /**
-     * Make middleware callable
-     *
-     * @param ServerRequestInterface $request
-     * @param ResponseInterface $response
-     *
-     * @return ResponseInterface
-     */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface
-    {
-        return $response;
     }
 }
