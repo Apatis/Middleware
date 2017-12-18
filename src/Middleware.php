@@ -87,6 +87,12 @@ class Middleware implements MiddlewareInterface
      */
     public function callMiddlewareStack(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        if ($this->isMiddlewareLocked()) {
+            throw new MiddlewareLockedException(
+                'Can not call middleware while middleware is locked or in stack queue'
+            );
+        }
+
         $this->middlewareLocked = true;
         $response               = $this->currentStackMiddleware()->__invoke($request, $response);
         $this->middlewareLocked = false;
