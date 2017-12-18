@@ -56,7 +56,7 @@ class Middleware implements MiddlewareInterface
             $middleware = method_exists($this, '__invoke')
                 ? $this
                 : new FakeMiddlewareInvokable();
-            $this->middleware[] = new MiddlewareStorage($middleware, $middleware);
+            $this->middleware[] = new MiddlewareStorage($middleware);
         }
 
         $middleware = end($this->middleware);
@@ -66,7 +66,7 @@ class Middleware implements MiddlewareInterface
     /**
      * {@inheritdoc}
      */
-    public function addMiddleware(callable $callable): MiddlewareInterface
+    public function addMiddleware(callable $callable) : MiddlewareInterface
     {
         if ($this->isMiddlewareLocked()) {
             throw new MiddlewareLockedException(
@@ -74,10 +74,9 @@ class Middleware implements MiddlewareInterface
             );
         }
 
-        $middleware = $this->currentStackMiddleware()->getCallableMiddleware();
         $this->middleware[] = new MiddlewareStorage(
             $callable,
-            $middleware
+            $this->currentStackMiddleware()
         );
 
         return $this;

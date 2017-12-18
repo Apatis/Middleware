@@ -46,8 +46,11 @@ class MiddlewareStorage implements MiddlewareStorageInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Target Callable by default is null depending to save resource
+     * Behavior to use the callable for end of execution
      */
-    public function __construct(callable $middleware, callable $targetCallable)
+    public function __construct(callable $middleware, callable $targetCallable = null)
     {
         /**
          * @uses \SplFixedArray to reduce memory usage
@@ -89,10 +92,16 @@ class MiddlewareStorage implements MiddlewareStorageInterface
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface
     {
-        $response = call_user_func($this->getCallableMiddleware(), $request, $response, $this->getTargetMiddleware());
+        // call middleware
+        $response = call_user_func(
+            $this->getCallableMiddleware(),
+            $request,
+            $response,
+            $this->getTargetMiddleware()
+        );
+
         // increment total invoke
         $this->totalInvoked++;
-
         if (!$response instanceof ResponseInterface) {
             throw new \UnexpectedValueException(
                 sprintf(
