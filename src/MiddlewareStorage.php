@@ -74,7 +74,7 @@ class MiddlewareStorage implements MiddlewareStorageInterface
      */
     public function getTargetMiddleware() : callable
     {
-        return $this->middleware[1];
+        return $this->middleware[1]?:$this->middleware[0];
     }
 
     /**
